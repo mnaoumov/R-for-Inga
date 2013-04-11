@@ -1,0 +1,205 @@
+library(maxLik)
+
+generateVector = function(N) {
+  a = rgamma(N, 3)
+  N = length(a)
+  a = (a - mean(a)) / sqrt(var(a) * (N - 1) / N)
+  a
+}
+
+generateLambdaFunction = function(a) {
+  sumf = function (from, to, f) {
+    if (from > to)
+      return (0)
+    
+    s = 0
+    for (i in from : to)
+      s = s + f(i)
+    s
+  }
+  
+  getSummand = function(i, m, t) {
+    p[i] * exp(t[1, i] + t[2, i] * a[m])
+  }
+  
+  getSum = function(m, t) {
+    p[k] + sumf(from = 1, to = k - 1, f = function(i) {
+      getSummand(i, m, t)
+    })
+  }
+  
+  kappa = function(t) {
+    sumf(from = 1, to = N, f = function(m) {
+      log(getSum(m, t))
+    })
+  }
+  
+  kappad = function(t) {
+    kappad_t0 = numeric(k - 1)
+    kappad_t1 = numeric(k - 1)
+    
+    kappad2Summand = function(j, m, t) {
+      getSummand(j, m, t) / getSum(m, t)
+    }
+    
+    for (j in 1 : (k - 1))
+    {
+      kappad_t0[j] = sumf(from = 1, to = N, f = function(m) {
+        kappad2Summand(j, m, t)
+      })
+      kappad_t1[j] = sumf(from = 1, to = N, f = function(m) {
+        kappad2Summand(j, m, t) * a[m]
+      })
+    }
+    
+    c(kappad_t0, kappad_t1)
+  }
+  
+  kappad2 = function(t) {
+    kappad2_t0_t0 = matrix(0, k - 1, k - 1)
+    kappad2_t0_t1 = matrix(0, k - 1, k - 1)
+    kappad2_t1_t1 = matrix(0, k - 1, k - 1)
+    
+    kappad2Summand = function(j, l, m, t) {
+      sum = getSum(m, t)
+      (getSummand(j, m, t) * sum * ifelse(j == l, 1, 0) - getSummand(j, m, t) * getSummand(l, m, t)) / (sum ^ 2)    
+    }
+    
+    for (j in 1 : (k - 1))
+    {
+      for (l in 1 : (k - 1))
+      {
+        kappad2_t0_t0[j, l] = sumf(from = 1, to = N, function(m) {
+          kappad2Summand(j, l, m, t)
+        })
+        kappad2_t0_t1[j, l] = sumf(from = 1, to = N, function(m) {
+          kappad2Summand(j, l, m, t) * a[m]
+        })
+        kappad2_t1_t1[j, l] = sumf(from = 1, to = N, function(m) {
+          kappad2Summand(j, l, m, t) * a[m] ^ 2
+        })
+      }    
+    }
+    
+    rbind(cbind(kappad2_t0_t0, kappad2_t0_t1), cbind(kappad2_t0_t1, kappad2_t1_t1))
+  }
+
+  Lambda = function(x) {
+    toMatrix = function(beta) {
+      matrix(beta, 2, k - 1)
+    }
+    
+    extend = function(x) {
+      c(p[1 : (k - 1)], x)
+    }
+    
+    func = function(beta) {
+      c(beta %*% extend(x)) - kappa(toMatrix(beta))
+    }
+    funcd = function(beta) {
+      extend(x) - kappad(toMatrix(beta))
+    }
+    funcd2 = function(beta) {
+      -kappad2(toMatrix(beta))
+    }
+    
+    lam = maxNR(func, grad = funcd, hess =  funcd2, start = rep(0, 2 * (k - 1)), tol = 1e-03, gradtol = 1e-03, steptol = 1e-03,  lambdatol = 1e-03, qrtol = 1e-03)
+    lam
+  }
+  
+  Lambda2 = function(x) {
+    Lambda(x * 0.999)$max
+  }
+  
+  Lambda2
+}
+
+F = function(x, a) {
+  return ((sum(x ^ 2)) / (mean(a ^ 2)))
+}
+
+getMean = function(b) {
+  means = numeric(k - 1)
+  lastIndex = 0
+  for (i in 1 : (k - 1)) {
+    nextIndex = lastIndex + n[i]
+    means[i] = sum(b[(lastIndex + 1) : nextIndex]) / N;
+    lastIndex = nextIndex
+  }
+  
+  means
+}
+
+getRandomMean = function(b) {
+  getMean(sample(b))
+}
+
+
+n = c(2, 3, 5)
+k = length(n)
+N = sum(n)
+p = n / N
+f = p[1:2]
+
+# amount of iterations for each pValue
+M = 500
+# amount of pValues
+Z = 1000
+
+#x1=numeric(10)
+
+  pFValues = numeric(Z)
+  pLValues = numeric(Z)
+
+  for (i in 1 : Z) {
+    print(paste("i=", i))    
+    a = generateVector(N)
+  #am = a + mu
+    # a = (am - mean(am)) / sqrt(var(am) * (N - 1) / N)
+    #Lambda = generateLambdaFunction(am)
+    Lbar = getMean(a)
+    LVal = c(kLam(Lbar,c(0,0,0,0),a,f)$lam)
+#LVal
+    Fbar = c(Lbar, -sum(Lbar))
+    FVal = F(Fbar, a)
+#FVal
+ 
+    FValues = numeric(M)
+    LValues = numeric(M)
+    
+    for (j in 1 : M) {
+      mean1 = getRandomMean(a)
+      mean2 = c(mean, -sum(mean))
+
+      FValues[j] = F(mean2, a)
+      LValues[j] = c(kLam(mean1,c(0,0,0,0),a,f)$lam)
+    }
+    
+    pFValues[i] = mean(FValues > FVal)
+    pLValues[i] = mean(LValues > LVal)
+  }
+ 
+  PowerL = mean(pLValues < .05)
+  PowerF= mean(pFValues < .05)
+  
+PowerL
+PowerF
+
+
+#plot(x1, PowerF, type = "l", col = "red")
+#lines(x1, PowerL, type = "l", col = "green")
+
+m1=0
+m2=0
+m3=0
+
+mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+mu
+
+        nn = length(mu)
+        xsd = sqrt((var(mu) * (nn - 1))/nn)
+        xdb = mean(mu)
+        mu = (mu - xdb)/xsd
+mu
+sum(mu)
+sum(mu^2)

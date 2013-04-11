@@ -1,0 +1,38 @@
+n=c(2,3,5)
+
+--------------------------------------------
+> m1=.2
+> m2=0
+> m3=.1
+> 
+> mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+> M = 800
+> # amount of pValues
+> Z = 1000
+> mu^2 = 0.13
+
+> PowerL
+[1] 0.047
+> PowerF
+[1] 0.049
+
+--------------------------------------------
+> m1=.4
+> m2=.5
+> m3=.2
+> 
+> mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+> # amount of iterations for each pValue
+> M = 800
+> # amount of pValues
+> Z = 1000
+> mu^2 = 1.27
+
+>   PowerL = mean(pLValues < .05)
+>   PowerF= mean(pFValues < .05)
+>   
+> PowerL
+[1] 0.049
+> PowerF
+[1] 0.069
+

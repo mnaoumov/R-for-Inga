@@ -1,0 +1,48 @@
+library(gtools)
+library(maxLik)
+
+k=3
+b=4
+A=array(dim=c(b,k))
+
+for (i in 1:b)
+  A[i,] = c(-1,0,1)
+
+kf = prod(1:k)
+
+tempList=list()
+for(i in 1:b) {
+  tempList[[i]]=1:kf
+}
+
+allIndices=expand.grid(tempList)
+
+allPossiblePermutations=list()
+for(i in 1:b) {
+  allPossiblePermutations[[i]]=permutations(k,k,A[i,])
+}
+
+x = c()
+y = c()
+
+for (indicesRowIndex in 1:dim(allIndices)[1]) {
+  indicesVector=allIndices[indicesRowIndex,]
+  tempMatrix=A
+  for(i in 1:b) {                       
+    permutationsOfRow=allPossiblePermutations[[i]]
+    rowPermutationIndex=indicesVector[,i]
+    tempMatrix[i,]=permutationsOfRow[rowPermutationIndex,]
+  }
+
+  p = colMeans(tempMatrix)[1:k-1]
+
+  if(p[2] == -1)
+    print(p)
+
+  x[indicesRowIndex] = p[1]
+  y[indicesRowIndex] = p[2]
+}
+
+z = chull(x,y)
+plot(x,y)
+polygon(x[z],y[z])

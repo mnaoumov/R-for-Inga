@@ -1,0 +1,64 @@
+generateVector = function(N) {
+  a = rgamma(N, 3)
+  N = length(a)
+  a = (a - mean(a)) / sqrt(var(a) * (N - 1) / N)
+  a
+}
+
+# variant 1: with checks for x_k
+isPointInsideDomainV1 = function(x, a, n) {
+  library(gtools)
+
+  k = length(n)
+  N = length(a)
+  aSorted = sort(a)
+
+  xFull = x
+  if (length(xFull) == k - 1)
+    xFull[k] = -sum(xFull)
+
+  stopifnot(length(xFull) == k)
+
+  for (l in 1 : (k - 1)) {
+    allSubIndices = combinations(k, l)
+    for (rowIndex in 1 : dim(allSubIndices)[1]) {
+      subIndices = allSubIndices[rowIndex,]
+      xSum = sum(xFull[subIndices])
+      summandsCount = sum(n[subIndices])
+      min = sum(aSorted[1 : summandsCount]) / N
+      max = sum(aSorted[(N - summandsCount + 1) : N]) / N
+      
+      if ((xSum <= min) || (xSum >= max))
+        return(FALSE)
+    }
+  }
+
+  return(TRUE)
+}
+
+# variant 2: without checks for x_k
+isPointInsideDomainV2 = function(x, a, n) {
+  library(gtools)
+
+  k = length(n)
+  N = length(a)
+  aSorted = sort(a)
+
+  stopifnot(length(x) == k - 1)
+
+  for (l in 1 : (k - 1)) {
+    allSubIndices = combinations(k - 1, l)
+    for (rowIndex in 1 : dim(allSubIndices)[1]) {
+      subIndices = allSubIndices[rowIndex,]
+      xSum = sum(x[subIndices])
+      summandsCount = sum(n[subIndices])
+      min = sum(aSorted[1 : summandsCount]) / N
+      max = sum(aSorted[(N - summandsCount + 1) : N]) / N
+      
+      if ((xSum <= min) || (xSum >= max))
+        return(FALSE)
+    }
+  }
+
+  return(TRUE)
+}

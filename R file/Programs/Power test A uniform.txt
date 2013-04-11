@@ -1,0 +1,7 @@
+generateRandomMatrix = function(b, k) {
+  A = array(runif(b * k), c(b, k))
+  A = A - apply(A, 1, mean)
+  A = A / sqrt(mean(A ^ 2))
+
+  A
+}

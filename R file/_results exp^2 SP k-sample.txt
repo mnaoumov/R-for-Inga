@@ -1,0 +1,18 @@
+> set.seed(34721)
+> exp40=rexp(40)^2
+> f=rep(.25,3)
+> expmc=mcanov(exp40,f,MC=100000)
+> expmc7=rep(0,7);for (i in 1:7){expmc7[i]=mean(expmc$mcreps[,1]>(i/10)^2/2)}
+> expmcsq7=rep(0,7);for (i in 1:7){expmcsq7[i]=mean(expmc$mcreps[,2]>40*(i/10)^2/2)}
+> 
+> expX27=rep(0,7);for (i in 1:7){expX27[i]=1-pchisq(40*(i/10)^2,3)}
+> expsp7=rep(0,7);for (i in 1:7){expsp7[i]=kHu(exp40,f,i/10,100)$tailp[1]}
+> expBN7=rep(0,7);for (i in 1:7){expBN7[i]=kHu(exp40,f,i/10,100)$tailp[2]}
+> expmatout=round(rbind(expmc7,expmcsq7,expX27,expsp7,expBN7),5)
+> expmatout
+            [,1]    [,2]    [,3]    [,4]    [,5]    [,6]    [,7]
+expmc7   0.97076 0.76936 0.46975 0.17503 0.04361 0.00702 0.00074
+expmcsq7 0.99323 0.89968 0.71031 0.39085 0.15828 0.04308 0.00910
+expX27   0.94024 0.65939 0.30802 0.09369 0.01857 0.00241 0.00021
+expsp7   0.96587 0.78654 0.43574 0.17371 0.04836 0.00659 0.00059
+expBN7   0.96052 0.74913 0.42430 0.17168 0.04961 0.00576 0.00073

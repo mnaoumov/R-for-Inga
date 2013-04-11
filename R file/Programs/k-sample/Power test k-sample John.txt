@@ -1,0 +1,149 @@
+library(maxLik)
+
+generateVector = function(N) {
+  a = rgamma(N, 3)
+  N = length(a)
+  a = (a - mean(a)) / sqrt(var(a) * (N - 1) / N)
+  a
+}
+
+kcgf= function(tau,xd, f)
+{
+#This function calculates K(tau), K"(tau) and K"(tau), where
+#t is a 2*(k-1) dimensional matrix, K(t) is a real number.
+#Inputs:t  in K(t).      
+#       xd=the population: a=1,a=2, ..., a=N.
+#       f=vector of ratios of group sizes (n_1,..  .,n_{k-1}) and population size (N), 
+#Outputs:cgf2$cgf:K(tau)
+#        cgf2$dcgf:K'(tau)
+#        cgf2$ddc gf:K"(tau)
+#           
+        taum=matrix(tau,length(f),2)
+        nn = length(xd)
+        xsd = sqrt((var(xd) * (nn - 1))/nn)
+        xdb = mean(xd)
+        x = (xd - xdb)/xsd
+        f1=1-sum(f)
+        nn1=rep(1,nn)
+        x2=rbind(nn1,x)
+        kt = mean(log(f1 + f%*%exp(taum%*%x2)))
+    h=t(t(f * exp(taum%*%x2))/c(f1 + f %*% exp(taum%*%x2)))
+        hx=t(x*t(f * exp(taum%*%x2))/c(f1 + f %*% exp(taum%*%x2)))
+        hhx=rbind(h,hx)
+        dk = c(h%*%t(x2)/nn)
+        ddk= (cbind(rbind(diag(c(h%*%nn1)),diag(c(h%*%x))),rbind(diag(c(h%*%x)),diag(c(hx%*%x))))-hhx%*%t(hhx))/nn
+        list(cgf = kt, dcgf = dk, ddcgf = ddk)
+}
+
+kLam=function(x1,t0,xd,f)
+{
+#This function solves  K'(t)=x for a given x=(f,x1).   
+#Inputs: x1: a given k-1-dimension vector.
+#        t0: an initial value for Newton's method of finding the 
+#            root of  k'(t)-x for a given x.
+#     xd: population.
+#     f=n/N
+#Outputs: Lam$lam=\Lambda(x)
+#         Lam$t=t(x), 3-dimension vector, t(x)%*%x-K(t(x))=sup{t.x-K(t): t}
+#         Lam$$kdd K"(t(x))
+#Get t0=t0(x), t0(x)%*%x-K(t0(x))=sup{t%*%x-K(t): t}
+
+       x=c(f,x1*0.999)
+      for (i in 1:10)
+    {   
+        ktt=kcgf(t0,xd,f)
+
+            #print(det(ktt$ddcgf))
+        t0=t0+solve(ktt$ddcgf)%*%(x-ktt$dcgf)
+        }
+    ktt=kcgf(t0,xd,f)
+    list(lam=-ktt$cgf+x%*%t0,t=t0,kdd=ktt$ddcgf,err=x-ktt$dcgf)
+}
+
+F = function(x, a) {
+  return ((sum(x ^ 2)) / (mean(a ^ 2)))
+}
+
+getMean = function(b) {
+  means = numeric(k - 1)
+  lastIndex = 0
+  for (i in 1 : (k - 1)) {
+    nextIndex = lastIndex + n[i]
+    means[i] = sum(b[(lastIndex + 1) : nextIndex]) / N;
+    lastIndex = nextIndex
+  }
+  
+  means
+}
+
+getRandomMean = function(b) {
+  getMean(sample(b))
+}
+
+
+n = c(2, 3, 5)
+k = length(n)
+N = sum(n)
+p = n / N
+f = p[1:2]
+
+# amount of iterations for each pValue
+M = 500
+# amount of pValues
+Z = 1000
+#x1=numeric(10)
+
+  pFValues = numeric(Z)
+  pLValues = numeric(Z)
+
+  for (i in 1 : Z) {
+    print(paste("i=", i))    
+    a = generateVector(N)
+  #am = a + mu
+    # a = (am - mean(am)) / sqrt(var(am) * (N - 1) / N)
+    Lbar = getMean(a)
+    LVal = c(kLam(Lbar,c(0,0,0,0),a,f)$lam)
+#LVal
+    Fbar = c(Lbar, -sum(Lbar))
+    FVal = F(Fbar, a)
+#FVal
+ 
+    FValues = numeric(M)
+    LValues = numeric(M)
+    
+    for (j in 1 : M) {
+      mean1 = getRandomMean(a)
+      mean2 = c(mean1, -sum(mean1))
+
+      FValues[j] = F(mean2, a)
+      LValues[j] = c(kLam(mean1,c(0,0,0,0),a,f)$lam)
+    }
+    
+    pFValues[i] = mean(FValues > FVal)
+    pLValues[i] = mean(LValues > LVal)
+  }
+ 
+  PowerL = mean(pLValues < .05)
+  PowerF= mean(pFValues < .05)
+  
+PowerL
+PowerF
+
+
+#plot(x1, PowerF, type = "l", col = "red")
+#lines(x1, PowerL, type = "l", col = "green")
+
+m1=0
+m2=0
+m3=0
+
+mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+mu
+
+        nn = length(mu)
+        xsd = sqrt((var(mu) * (nn - 1))/nn)
+        xdb = mean(mu)
+        mu = (mu - xdb)/xsd
+mu
+sum(mu)
+sum(mu^2)

@@ -1,0 +1,19 @@
+
+Accuracy block design for exp^2 distr
+
+> apply(outer(Fstat,b*(6:15/10)^2,">"),2,mean)
+ [1] 0.6443 0.4061 0.1571 0.0170 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
+> round(1-pchisq(b*(6:15/10)^2,k-1),4)
+ [1] 0.4717 0.3300 0.2141 0.1288 0.0719 0.0372 0.0179 0.0080 0.0033 0.0013
+> Lstat=NULL;for (i in 1:10000)Lstat=c(Lstat,Lambda(xxx[,i])$max)
+Error in maxNRCompute(fn = logLikAttr, fnOrig = fn, gradOrig = grad, hessOrig = hess,  : 
+  NA in Hessian (at the iteration start)
+> apply(outer(Lstat,(6:15/10)^2/2,">"),2,mean)
+ [1] 0.759842520 0.541338583 0.411417323 0.291338583 0.187007874
+ [6] 0.122047244 0.066929134 0.039370079 0.017716535 0.003937008
+>
+> round(tpnc,4)
+[1] 0.6810 0.4392 0.4149 0.1118 0.1352 0.0543 0.0339 0.0388 0.0131 
+
+> round(tplr,4)
+[1] 0.6879 0.6650 0.2257

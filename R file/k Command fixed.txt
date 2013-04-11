@@ -1,0 +1,16 @@
+setwd("c:/Inga/Research/2010Statistics/R file/Programs")
+
+source('k Functions.txt')
+
+set.seed(34721)
+exp40=rexp(40)^2
+f=rep(.25,3)
+expmc=mcanov(exp40,f,MC=100000)
+expmc7=rep(0,7);for (i in 1:7){expmc7[i]=mean(expmc$mcreps[,1]>(i/10)^2/2)}
+expmcsq7=rep(0,7);for (i in 1:7){expmcsq7[i]=mean(expmc$mcreps[,2]>40*(i/10)^2/2)}
+
+expX27=rep(0,7);for (i in 1:7){expX27[i]=1-pchisq(40*(i/10)^2,3)}
+expsp7=rep(0,7);for (i in 1:7){expsp7[i]=kHu(exp40,f,i/10,100)$tailp[1]}
+expBN7=rep(0,7);for (i in 1:7){expBN7[i]=kHu(exp40,f,i/10,100)$tailp[2]}
+expmatout=round(rbind(expmc7,expmcsq7,expX27,expsp7,expBN7),5)
+expmatout 

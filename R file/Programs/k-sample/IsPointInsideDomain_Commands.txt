@@ -1,0 +1,39 @@
+### Main program ###
+
+N = 10
+a = generateVector(N)
+k = 3
+n = c(2, 3, 5)
+
+b = sort(a)
+print("sorted a: ")
+print(b)
+
+p = c(sum(b[1 : 2]) / N, sum(b[3 : 6]) / N)
+
+print ("the lower left corner point: ")
+print(p)
+
+x = p
+print("isPointInsideDomainV1 for ")
+print(x)
+print(isPointInsideDomainV1(x, a, n))
+print("isPointInsideDomainV2 for ")
+print(x)
+print(isPointInsideDomainV2(x, a, n))
+
+x = p + c(0.1, 0.1)
+print("isPointInsideDomainV1 for ")
+print(x)
+print(isPointInsideDomainV1(x, a, n))
+print("isPointInsideDomainV2 for ")
+print(x)
+print(isPointInsideDomainV2(x, a, n))
+
+x = p + c(-0.1, 0.1)
+print("isPointInsideDomainV1 for ")
+print(x)
+print(isPointInsideDomainV1(x, a, n))
+print("isPointInsideDomainV2 for ")
+print(x)
+print(isPointInsideDomainV2(x, a, n))

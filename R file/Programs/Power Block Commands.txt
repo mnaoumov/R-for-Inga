@@ -1,0 +1,61 @@
+# amount of iterations for each pValue
+M = 1000
+
+# amount of pValues
+N = 900
+
+# amount of rows
+b = 7
+
+# amount of columns
+k = 4
+
+PowerL=numeric(10)
+PowerF=numeric(10)
+x1=numeric(10)
+
+for (kk in 0:9){
+print(paste("kk=",kk))
+x1[kk+1] = kk^2/25
+
+pFValues = numeric(N)
+pLValues = numeric(N)
+
+for (i in 1 : N) {
+  
+print(paste("i=",i))
+A = generateRandomMatrix(b, k)
+mu = c(-kk/5, 0, 0, kk/5)
+A = addMu(A, mu)
+Lambda = generateLambdaFunction(A)
+Abar = apply(A, 2, mean)[1 : (k - 1)]
+LVal = Lambda(Abar)
+Abar1=c(Abar,-sum(Abar))
+FVal = F(Abar1,A)
+ 
+FValues = numeric(M)
+LValues = numeric(M)
+    
+for (j in 1 : M) {
+mean = getRandomMean(A)
+mean1=c(mean,-sum(mean))
+
+FValues[j] = F(mean1,A)
+LValues[j] = Lambda(mean)
+  }
+    
+pFValues[i] = mean(FValues > FVal)
+pLValues[i] = mean(LValues > LVal)
+}
+ 
+PowerL[kk+1]=mean(pLValues<.05)
+PowerF[kk+1]=mean(pFValues<.05)
+}
+
+print("PowerL")
+print(PowerL)
+print("PowerF")
+print(PowerF)
+
+#plot(x1,meanpF,type="l",col="red")
+#lines(x1,meanpL,type="l",col="green")

@@ -1,0 +1,67 @@
+
+n = c(2, 3, 5)
+k = length(n)
+N = sum(n)
+p = n / N
+f = p[1:2]
+
+# amount of iterations for each pValue
+M = 500
+# amount of pValues
+Z = 1000
+#x1=numeric(10)
+
+  pFValues = numeric(Z)
+  pLValues = numeric(Z)
+
+  for (i in 1 : Z) {
+    print(paste("i=", i))    
+    a = generateVector(N)
+  #am = a + mu
+    # a = (am - mean(am)) / sqrt(var(am) * (N - 1) / N)
+    Lbar = getMean(a)
+    LVal = c(kLam(Lbar,c(0,0,0,0),a,f)$lam)
+#LVal
+    Fbar = c(Lbar, -sum(Lbar))
+    FVal = F(Fbar, a)
+#FVal
+ 
+    FValues = numeric(M)
+    LValues = numeric(M)
+    
+    for (j in 1 : M) {
+      mean1 = getRandomMean(a)
+      mean2 = c(mean1, -sum(mean1))
+
+      FValues[j] = F(mean2, a)
+      LValues[j] = c(kLam(mean1,c(0,0,0,0),a,f)$lam)
+    }
+    
+    pFValues[i] = mean(FValues > FVal)
+    pLValues[i] = mean(LValues > LVal)
+  }
+ 
+  PowerL = mean(pLValues < .05)
+  PowerF= mean(pFValues < .05)
+  
+PowerL
+PowerF
+
+
+#plot(x1, PowerF, type = "l", col = "red")
+#lines(x1, PowerL, type = "l", col = "green")
+
+m1=0
+m2=0
+m3=0
+
+mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+mu
+
+        nn = length(mu)
+        xsd = sqrt((var(mu) * (nn - 1))/nn)
+        xdb = mean(mu)
+        mu = (mu - xdb)/xsd
+mu
+sum(mu)
+sum(mu^2)

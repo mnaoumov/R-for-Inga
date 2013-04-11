@@ -1,0 +1,76 @@
+library(gtools)
+library(maxLik)
+b=5
+k=3
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+sumf=function(f) {
+  s=0
+  for(i in 1:b) s=s+f(i)
+  s/b }
+perm=function(i) permutations(k,k-1,A[i,])
+expb=function(i,beta) exp(perm(i)%*%beta)
+kappad2=function(beta) {
+    kappad2i=function(i) { -(t(perm(i))%*%expb(i,beta)%*%t(expb(i,beta))%*%perm(i))/sum(expb(i,beta))^2+(t(perm(i))%*%diag(c(expb(i,beta)))%*%perm(i))/sum(expb(i,beta))
+    }
+    sumf(kappad2i)
+  }
+Lambda=function(x){
+  kappa=function(beta) {
+    kappai=function(i) log(sum(expb(i,beta))/prod(1:k))
+    sumf(kappai)
+  }
+  kappad=function(beta) {
+    kappadi=function(i) t(perm(i))%*%expb(i,beta)/sum(expb(i,beta))
+    sumf(kappadi)
+  }
+ll=function(beta){beta%*%x-kappa(beta)}
+lll=function(beta){x-kappad(beta)[,1]}
+llll=function(beta){-kappad2(beta)}
+lam=maxNR(ll,grad=lll,hess=llll,start=rep(0,k-1))
+lam
+}
+
+matrixRowSort=function(M) {
+     MSorted=M
+     b=dim(M)[1]
+     for(i in 1:b) MSorted[i,]=sort(M[i,])
+     MSorted
+}
+
+c=colMeans(matrixRowSort(A))
+
+isPointInsideDomain = function(A, x) {
+  c=colMeans(matrixRowSort(A))
+  stopifnot(length(x) == k)
+  for (usedIndices in 1 : (k-1)) {
+    subVectors = combinations(k, usedIndices, x, set = FALSE)
+    subVectorSums = apply(subVectors, 1, sum)
+    sumMins = sum(c[1 : usedIndices])
+    sumMaxs = sum(c[(k - usedIndices + 1) : k])
+    if (!all(subVectorSums > sumMins))
+      return(FALSE);
+    if (!all(subVectorSums < sumMaxs))
+      return(FALSE);
+  }
+  return(TRUE)
+}
+
+step = 0.1
+x=seq(c[1],c[3],step)
+y=x
+l=length(x)
+z=array(numeric(l*l),c(l,l))
+
+for (i in 1:l) {
+    for (j in 1:l) {
+        point = c(x[i],y[j])
+        if (isPointInsideDomain(A,c(point,-sum(point))))
+          z[i,j] = Lambda(point)$max
+        else
+          z[i,j] = NA
+    }
+}
+
+filled.contour(x,y,z,nlevels=20)

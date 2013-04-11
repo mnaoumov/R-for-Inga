@@ -1,0 +1,165 @@
+generateRandomMatrix = function(b, k) {
+  A = array(rexp(b * k)^2, c(b, k))
+  A = A - apply(A, 1, mean)
+  A = A / sqrt(mean(A ^ 2))
+
+  A
+}
+
+generateMu = function(k) {
+  mu = c(runif(k))
+  mu = mu - mean(mu)
+  mu = mu / sqrt(mean(mu ^ 2))
+    mu
+}
+
+addMu = function(A, mu) {
+  B = A
+  b = dim(B)[1]
+    for (i in 1 : b)
+    B[i,] = B[i,] + mu
+
+  B/sqrt(mean(B^2))
+}
+
+getRandomMean = function(A) {
+  b = dim(A)[1]
+  k = dim(A)[2]
+    B = array(dim = c(b, k))
+  for(i in 1 : b)
+    B[i,] = sample(A[i,], k)
+
+  mean = apply(B, 2, mean)[1 : (k - 1)]
+    mean
+}
+
+getOrderedMeans = function() {
+  ASorted = array(dim = c(b, k))
+  for(i in 1 : b)
+    ASorted[i,] = sort(A[i,])
+
+  orderedMeans = colMeans(ASorted)
+  
+  orderedMeans
+}
+
+orderedMeans = getOrderedMeans()
+
+isPointInsideDomain = function(x) {
+  y = x
+  if (length(y) == k - 1)
+    y[length(y) + 1] = -sum(y)
+
+  stopifnot(length(y) == k)
+
+  for (usedIndices in 1 : (k-1)) {
+    subVectors = combinations(k, usedIndices, y, set = FALSE)
+    subVectorSums = apply(subVectors, 1, sum)
+    sumMins = sum(orderedMeans[1 : usedIndices])
+    sumMaxs = sum(orderedMeans[(k - usedIndices + 1) : k])
+    if (!all(subVectorSums > sumMins))
+      return(FALSE);
+    if (!all(subVectorSums < sumMaxs))
+      return(FALSE);
+  }
+  return(TRUE)
+}
+
+putInsideDomain = function(x) {
+  if (isPointInsideDomain(x))
+  {
+    return (x)
+  }
+
+  norm = sqrt(sum(x ^ 2))
+
+  inside = 0
+  outside = norm
+
+  # 2^(-15) < 0.0001
+  for (i in 1:15) {
+    r = (inside + outside) / 2
+    y = x / norm * r
+    if (!isPointInsideDomain(y)) {
+      outside = r
+    }
+    else {
+      inside = r
+    }
+  }
+
+  return (x / norm * inside)
+}
+
+generateLambdaFunction = function(A) {
+  library(gtools)
+  library(maxLik)
+    b = dim(A)[1]
+    k = dim(A)[2]
+    # List of permutations
+    permList = list()
+    for (i in 1 : b)
+    permList[[i]] = permutations(k, k - 1, A[i,])
+    perm = function(i) {
+    permList[[i]]
+  }
+    # \frac 1b \sum_{i=1}^b f(i)
+  sumf = function(f) {
+    s = 0
+    for (i in 1 : b)
+      s = s + f(i)
+        s / b
+  }
+    expb = function(i, beta) {
+    exp(perm(i) %*% beta)
+  }
+    kfact = prod(1 : k)
+    kappa = function(beta) {
+    kappai = function(i) {
+      log(sum(expb(i, beta)) / kfact)
+    }
+        sumf(kappai)
+  }
+    kappad = function(beta) {
+    kappadi = function(i) {
+      temp = expb(i, beta)
+            t(perm(i)) %*% temp / sum(temp)
+    }
+        sumf(kappadi)
+  }
+    kappad2 = function(beta) {
+    kappad2i = function(i) {
+      temp = expb(i, beta)
+            -(t(perm(i)) %*% temp %*% t(temp) %*%   perm(i)) / sum (temp) ^ 2 + (t(perm(i)) %*%  diag(c (temp)) %*% perm(i)) / sum (temp)
+    }
+        sumf(kappad2i)
+  }
+    Lambda = function(x) {
+  x = putInsideDomain(x) * 0.999
+
+  kappa = function(beta) {
+    kappai = function(i) log(sum(expb(i, beta)) / prod(1 : k))
+    sumf(kappai)
+  }
+
+  kappad = function(beta) {
+    kappadi = function(i) t(perm(i)) %*% expb(i, beta) / sum(expb(i, beta))
+    sumf(kappadi)
+  }
+
+  ll = function(beta) { beta %*% x - kappa(beta) }
+  lll = function(beta) { x - kappad(beta)[,1] }
+  llll = function(beta) { -kappad2(beta) }
+  lam = maxNR(ll, grad = lll, hess = llll, start = rep(0, k - 1))
+  lam
+
+  }
+      Lambda2 = function(x) {
+    Lambda(x)$max
+  }
+    Lambda2
+}
+
+F = function(x,A) {
+  return ((sum(x ^ 2))/(mean(A^2)))
+}

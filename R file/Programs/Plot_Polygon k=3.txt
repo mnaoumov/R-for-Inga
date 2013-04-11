@@ -1,0 +1,44 @@
+#order the matrix 
+matrixRowSort=function(M) {
+     MSorted=M
+     b=dim(M)[1]
+     for(i in 1:b) MSorted[i,]=sort(M[i,])
+     MSorted
+}
+#get means
+c=colMeans(matrixRowSort(A))
+
+#for k=3 plot the polygon
+p=permutations(3,2,c)
+           [,1]       [,2]
+[1,] -1.3229094  0.3928336
+[2,] -1.3229094  0.9300758
+[3,]  0.3928336 -1.3229094
+[4,]  0.3928336  0.9300758
+[5,]  0.9300758 -1.3229094
+[6,]  0.9300758  0.3928336
+#get the domain
+x=p[,1]
+y=p[,2]
+
+z=chull(x,y)
+
+plot(x,y)
+polygon(x[z],y[z])
+
+
+
+library (sp)
+
+point.in.polygon(0,0,x[z],y[z])
+
+#generator of observed means
+B=A
+for(i in 1:b) {
+  row=A[i,]
+  p=permutations(k,k,row)
+  kfact=prod(1:k)
+  randomRowIndex=sample(1:kfact,1)
+  B[i,]=p[randomRowIndex,]
+}
+xstar=colMeans(B)

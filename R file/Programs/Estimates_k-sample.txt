@@ -1,0 +1,107 @@
+a = rgamma(10, 3)
+a = (a - mean(a)) / sqrt(var(a) * 9 / 10)
+
+N = 10
+k = 3
+
+n = c(2, 3, 5)
+
+getMeans = function(b) {
+  means = numeric(k)
+  lastIndex = 0
+  for (i in 1 : k) {
+    nextIndex = lastIndex + n[i]
+    means[i] = mean(b[(lastIndex + 1) : nextIndex]);
+    lastIndex = nextIndex
+  }
+
+  means
+}
+
+Y = getMeans(sort(a))
+
+
+P = 500000
+
+x = numeric(P)
+y = numeric(P)
+for (i in 1 : P) {
+  b = sample(a, N)
+  X = getMeans(b) 
+  x[i] = X[1]
+  y[i] = X[2]
+}
+
+plot(x, y)
+
+
+
+
+p1=n1/N
+p2=n2/N
+p3=n3/N
+
+#kd1 = function(t01, t02, t11, t12) {
+# s = 0
+# for (m in 1:N) {
+#   s = s + (p1 * a[m] * exp(t01 + t11 * a[m])) / (p3 + p1*exp(t01 + t11 * a[m]) + p2*exp(t02+t12 * a[m]))
+# }
+# return (s)
+#}
+
+kd1 = function(t01, t02, t11, t12) {
+ s = 0
+ for (m in 1:N) {
+   s = s + (p1 * a[m]) / (p3 * exp(-t01 - t11 * a[m]) + p1 + p2*exp(t02-t01+(t12-t11) * a[m]))
+ }
+ return (s)
+}
+
+
+
+-----------------------------------------------
+a = rgamma(10, 2)
+a = (a - mean(a)) / sqrt(var(a) * 9 / 10)
+
+N = 10
+k = 2
+
+n = c(6,4)
+
+getMeans = function(b) {
+  means = numeric(k)
+  lastIndex = 0
+  for (i in 1 : k) {
+    nextIndex = lastIndex + n[i]
+    means[i] = mean(b[(lastIndex + 1) : nextIndex]);
+    lastIndex = nextIndex
+  }
+
+  means
+}
+
+Y = getMeans(sort(a))
+
+p1 = n[1] / N
+p2 = n[2] / N
+
+kd0 = function(t0, t1) {
+  s = 0
+  for (m in 1 : N) {
+    z = p1 * exp(t0 + t1 * a[m])
+    s = s + 1 / (p2 / z + 1)
+  }
+  s = s / N
+  s
+}
+
+
+
+
+kd1 = function(t01, t02, t11, t12) {
+ s = 0
+ for (m in 1:N) {
+   s = s + p1 / (p3 * exp(-t01 - t11 * a[m]) + p1 + p2*exp(t02-t01+(t12-t11) * a[m]))
+ }
+ return (s)
+}

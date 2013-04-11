@@ -1,0 +1,41 @@
+library(gtools)
+library(maxLik)
+
+b=5
+k=3
+
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+
+getOrderedMeans = function() {
+  ASorted = array(dim = c(b,k))
+  for(i in 1:b)
+    ASorted[i,] = sort(A[i,])
+
+  orderedMeans = colMeans(ASorted)
+  
+  orderedMeans
+}
+
+orderedMeans = getOrderedMeans()
+
+isPointInsideDomain = function(x) {
+  y = x
+  if (length(y) == k - 1)
+    y[length(y) + 1] = -sum(y)
+
+  stopifnot(length(y) == k)
+
+  for (usedIndices in 1 : (k-1)) {
+    subVectors = combinations(k, usedIndices, y, set = FALSE)
+    subVectorSums = apply(subVectors, 1, sum)
+    sumMins = sum(orderedMeans[1 : usedIndices])
+    sumMaxs = sum(orderedMeans[(k - usedIndices + 1) : k])
+    if (!all(subVectorSums > sumMins))
+      return(FALSE);
+    if (!all(subVectorSums < sumMaxs))
+      return(FALSE);
+  }
+  return(TRUE)
+}

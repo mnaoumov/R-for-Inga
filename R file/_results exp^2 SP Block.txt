@@ -1,0 +1,58 @@
+
+R version 2.15.1 (2012-06-22) -- "Roasted Marshmallows"
+Copyright (C) 2012 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+Platform: x86_64-pc-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> setwd("c:/Inga/Research/2010Statistics/R file/Programs")
+> 
+> b=7
+> k=4
+> 
+> A = array(rexp(b * k)^2, c(b, k))
+> A=A-apply(A,1,mean)
+> A=A/sqrt(mean(A^2))
+> 
+> source("SP Block Functions fixed.txt")
+Loading required package: miscTools
+> 
+> xxx=NULL;for(i in 1:10000)xxx=c(xxx, apply(t(apply(A,1,sample,size=k-1)),2,mean))
+> xxx=matrix(xxx,k-1,10000)
+> Lstat=NULL;for (i in 1:10000)Lstat=c(Lstat,Lambda(xxx[,i])$max)
+> Fstat=b*apply(xxx^2,2,sum)
+> 
+> apply(outer(Lstat,(6:15/10)^2/2,">"),2,mean)
+ [1] 0.5975 0.4665 0.3389 0.2211 0.1347 0.0813 0.0471 0.0237 0.0121 0.0048
+> apply(outer(Fstat,b*(6:15/10)^2,">"),2,mean)
+ [1] 0.5140 0.3605 0.2252 0.1154 0.0518 0.0168 0.0053 0.0006 0.0000 0.0000
+> round(1-pchisq(b*(6:15/10)^2,k-1),4)
+ [1] 0.4717 0.3300 0.2141 0.1288 0.0719 0.0372 0.0179 0.0080 0.0033 0.0013
+> 
+> u=6:15/10
+> tplr=NULL
+> for (i in 1:10)tplr=c(tplr,TailDistrMonteCarlo(u[i],10)$LugRice)
+> round(tplr,4)
+ [1] 0.5938 0.4573 0.3352 0.2145 0.1675 0.1077 0.1187 0.0605 0.0963 0.0602
+> 
+> tpnc=NULL
+> for (i in 1:10)tpnc=c(tpnc,TailDistrMonteCarlo(u[i],10)$NielCox)
+> round(tpnc,4)
+ [1] 0.5713 0.4343 0.3065 0.2118 0.1546 0.1077 0.0843 0.0791 0.0385 0.0206
+
+
+> > > 
+> 

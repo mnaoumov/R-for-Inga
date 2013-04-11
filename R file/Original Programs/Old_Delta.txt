@@ -1,0 +1,82 @@
+library(gtools)
+library(maxLik)
+
+b=5
+k=3
+
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+sumf=function(f) {
+  s=0
+  for(i in 1:b) s=s+f(i)
+  s/b }
+
+
+perm=function(i) permutations(k,k-1,A[i,])
+
+expb=function(i,beta) exp(perm(i)%*%beta)
+
+kappa=function(beta) {
+  kappai=function(i) log(sum(expb(i,beta))/prod(1:k))
+  sumf(kappai)
+}
+
+kappad=function(beta) {
+  kappadi=function(i) t(perm(i))%*%expb(i,beta)/sum(expb(i,beta))
+  sumf(kappadi)
+}
+
+
+kappad2=function(beta) {
+  kappad2i=function(i) {
+    -(t(perm(i))%*%expb(i,beta)%*%t(expb(i,beta))%*%perm(i))/sum(expb(i,beta))^2+(t(perm(i))%*%diag(c(expb(i,beta)))%*%perm(i))/sum(expb(i,beta))
+  }
+  sumf(kappad2i)
+}
+
+Lambda=function(x){
+ll=function(beta){beta%*%x-kappa(beta)}
+lll=function(beta){x-kappad(beta)[,1]}
+llll=function(beta){-kappad2(beta)}
+lam=maxNR(ll,grad=lll,hess=llll,start=rep(0,k-1))
+lam
+}
+
+Sqr=function(M){m=svd(M)$u%*%diag(sqrt(svd(M)$d))%*%t(svd(M)$v);m} 
+
+V0h=Sqr(kappad2(rep(0,k-1)))
+
+
+TailDistr=function(u,M){
+  deltaold=function(s) {
+    transformed=function(r) (r*V0h%*%s)[,1]
+    g=function(r) {Lambda(transformed(r))$max-u^2/2}
+    G=function(r) {-g(r)^2}
+    r=maxNR(G,start=u)$est
+    betah=Lambda(transformed(r))$est
+    #for comparison
+    return((gamma((k-1)/2)*det(kappad2(betah))^(-1/2)*r^(k-2))/(2*pi^((k-1)/2)*u^(k-3)*abs(t(s)%*%V0h%*%betah)))
+#result = (((det(kappad2(betah))^(-1/2)*det(V0h)*r^(k-2))/(u^(k-3)*abs(t(s)%*%V0h%*%betah))))[1,1]
+    #result
+  } 
+
+  UniformOnSphere=function(n) {
+    x=rnorm(n)
+    r=sqrt(sum(x^2))
+    x/r
+  }
+
+  G=function(h) {
+    r=0
+    for(i in 1:M) r=r+h(UniformOnSphere(k-1))
+    1/M*r
+  }
+
+  cb=(b^((k-1)/2))/(2^((k-1)/2-1)*gamma((k-1)/2))
+  Gb=G(deltaold)
+  Tail1=dchisq(b*u^2,k-1) + cb/b*u^(k-3)*exp(-b*u^2/2)*(Gb-1)
+  ustar=u-log(Gb)/(b*u)
+  Tail2=dchisq(b*ustar^2,k-1)
+  list(Tail1,Tail2)
+}

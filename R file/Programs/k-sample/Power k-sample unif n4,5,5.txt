@@ -1,0 +1,125 @@
+library(maxLik)
+
+generateVector = function(N) {
+  a = runif(N)
+  a = (a - mean(a)) / sqrt(var(a) * (N - 1) / N)
+  a
+}
+
+kcgf= function(tau,xd, f)
+{       taum=matrix(tau,length(f),2)
+        f1=1-sum(f)
+        nn1=rep(1,N)
+        x2=rbind(nn1,xd)
+        kt = mean(log(f1 + f%*%exp(taum%*%x2)))
+    h=t(t(f * exp(taum%*%x2))/c(f1 + f %*% exp(taum%*%x2)))
+        hx=t(xd*t(f * exp(taum%*%x2))/c(f1 + f %*% exp(taum%*%x2)))
+        hhx=rbind(h,hx)
+        dk = c(h%*%t(x2)/N)
+        ddk= (cbind(rbind(diag(c(h%*%nn1)),diag(c(h%*%xd))),rbind(diag(c(h%*%xd)),diag(c(hx%*%xd))))-hhx%*%t(hhx))/N
+        list(cgf = kt, dcgf = dk, ddcgf = ddk)
+}
+
+kLam=function(x1,t0,xd,f)
+{     x=c(f,x1*0.99)
+      for (i in 1:10)
+    {   
+        ktt=kcgf(t0,xd,f)
+
+            #print(det(ktt$ddcgf))
+        t0=t0+solve(ktt$ddcgf)%*%(x-ktt$dcgf)
+        }
+    ktt=kcgf(t0,xd,f)
+    list(lam=-ktt$cgf+x%*%t0,t=t0,kdd=ktt$ddcgf,err=x-ktt$dcgf)
+}
+
+F = function(x, a) {
+  return ((sum(x ^ 2)) / (mean(a ^ 2)))
+}
+
+getMean = function(b) {
+  means = numeric(k - 1)
+  lastIndex = 0
+  for (i in 1 : (k - 1)) {
+    nextIndex = lastIndex + n[i]
+    means[i] = sum(b[(lastIndex + 1) : nextIndex]) / N;
+    lastIndex = nextIndex
+  }
+  
+  means
+}
+
+n = c(4, 5, 5)
+k = length(n)
+N = sum(n)
+p = n / N
+f = p[1:2]
+
+# amount of iterations for each pValue
+M = 700
+# amount of pValues
+Z = 1000
+
+runForMu = function(m1, m2, m3) {
+mu=c(rep(m1,n[1]),rep(m2,n[2]),rep(m3,n[3]))
+mbar = (m1^2*n[1] + m2^2*n[2] + m3^2*n[3])/N
+la = (m1-mbar)^2*n[1] + (m2-mbar)^2*n[2] + (m3-mbar)^2*n[3]
+print("la")
+print(la)
+
+  pFValues = numeric(Z)
+  pLValues = numeric(Z)
+
+  for (i in 1 : Z) {
+    print(paste("i=", i))    
+    a = generateVector(N)
+    a = a + mu
+        N = length(a)
+        xsd = sqrt((var(a) * (N - 1))/N)
+        xdb = mean(a)
+        a = (a - xdb)/xsd
+    Lbar = getMean(a)
+    Fbar = c(Lbar, -sum(Lbar))
+
+    FVal = F(Fbar, a) 
+    LVal = c(kLam(Lbar,rep(0,2*(k-1)),a,f)$lam)
+ 
+    FValues = numeric(M)
+    LValues = numeric(M)
+    
+    for (j in 1 : M) {
+      mean1 = getMean(sample(a))
+      mean2 = c(mean1, - sum(mean1))
+
+      FValues[j] = F(mean2, a)
+      LValues[j] = c(kLam(mean1,rep(0,2*(k-1)),a,f)$lam)
+    }
+    
+    pFValues[i] = mean(FValues > FVal)
+    pLValues[i] = mean(LValues > LVal)
+  }
+ 
+#hist(pFValues)
+#hist(pLValues)
+
+  PowerL = mean(pLValues < .05)
+  PowerF= mean(pFValues < .05)
+  
+print("PowerL")
+print(PowerL)
+print("PowerF")
+print(PowerF)
+
+#plot(x1, PowerF, type = "l", col = "red")
+#lines(x1, PowerL, type = "l", col = "green")
+}
+
+
+runForMu(-.1, 0, .1)
+runForMu(-.3, 0, .3)
+runForMu(-.5, 0, .5)
+runForMu(-1, 0, 1)
+runForMu(-1.2, 0, 1.2)
+runForMu(-1.4, 0, 1.4)
+runForMu(-1.6, 0, 1.6)
+runForMu(-1.9, 0, 1.9)

@@ -1,0 +1,160 @@
+generateRandomMatrix = function(b, k) {
+  A = array(rgamma(b * k, 0.5), c(b, k))
+  A = A - apply(A, 1, mean)
+  A = A / sqrt(mean(A ^ 2))
+
+  A
+}
+
+generateMu = function(k) {
+  mu = c(runif(k))
+  mu = mu - mean(mu)
+  mu = mu / sqrt(mean(mu ^ 2))
+    mu
+}
+
+addMu = function(A, mu) {
+  B = A
+  b = dim(B)[1]
+    for (i in 1 : b)
+    B[i,] = B[i,] + mu
+
+  B/sqrt(mean(B^2))
+}
+
+getRandomMean = function(A) {
+  b = dim(A)[1]
+  k = dim(A)[2]
+    B = array(dim = c(b, k))
+  for(i in 1 : b)
+    B[i,] = sample(A[i,], k)
+
+  mean = apply(B, 2, mean)[1 : (k - 1)]
+    mean
+}
+
+generateLambdaFunction = function(A) {
+  library(gtools)
+  library(maxLik)
+    b = dim(A)[1]
+  k = dim(A)[2]
+    # List of permutations
+    permList = list()
+    for (i in 1 : b)
+    permList[[i]] = permutations(k, k - 1, A[i,])
+    perm = function(i) {
+    permList[[i]]
+  }
+    # \frac 1b \sum_{i=1}^b f(i)
+  sumf = function(f) {
+    s = 0
+    for (i in 1 : b)
+      s = s + f(i)
+        s / b
+  }
+    expb = function(i, beta) {
+    exp(perm(i) %*% beta)
+  }
+    kfact = prod(1 : k)
+    kappa = function(beta) {
+    kappai = function(i) {
+      log(sum(expb(i, beta)) / kfact)
+    }
+        sumf(kappai)
+  }
+    kappad = function(beta) {
+    kappadi = function(i) {
+      temp = expb(i, beta)
+            t(perm(i)) %*% temp / sum(temp)
+    }
+        sumf(kappadi)
+  }
+    kappad2 = function(beta) {
+    kappad2i = function(i) {
+      temp = expb(i, beta)
+            -(t(perm(i)) %*% temp %*% t(temp) %*%  perm(i)) / sum (temp) ^ 2 + (t(perm(i)) %*% diag(c (temp)) %*% perm(i)) / sum (temp)
+    }
+        sumf(kappad2i)
+  }
+    Lambda = function(x) {
+    func = function(beta) {
+      beta %*% x - kappa(beta)
+    }
+        funcd = function(beta) {
+      x - kappad(beta)[, 1]
+    }
+        funcd2 = function(beta) {
+      -kappad2(beta)
+    }
+        lam = maxNR(func, grad = funcd, hess =  funcd2, start = rep (0, k - 1), tol = 1e-03, gradtol  = 1e-03, steptol = 1e-03,  lambdatol = 1e-03, qrtol  = 1e-03)
+    lam
+  }
+      Lambda2 = function(x) {
+    Lambda(x * 0.999)$max
+  }
+    Lambda2
+}
+
+F = function(x,A) {
+  return ((sum(x ^ 2))/(mean(A^2)))
+}
+
+# amount of iterations for each pValue
+M = 800
+# amount of pValues
+N = 900
+# amount of rows
+b = 7
+
+# amount of columns
+k = 4
+
+meanpL=numeric(10)
+
+meanpF=numeric(10)
+x1=numeric(10)
+
+for (kk in 0:9){
+print(paste("kk=",kk))
+x1[kk+1] = kk^2/25
+
+pFValues = numeric(N)
+pLValues = numeric(N)
+
+for (i in 1 : N) {
+  
+print(paste("i=",i))
+A = generateRandomMatrix(b, k)
+mu = c(-kk/5, 0,0, kk/5)
+A = addMu(A, mu)
+Lambda = generateLambdaFunction(A)
+Abar = apply(A, 2, mean)[1 : (k - 1)]
+LVal = Lambda(Abar)
+Abar1=c(Abar,-sum(Abar))
+FVal = F(Abar1,A)
+ 
+FValues = numeric(M)
+LValues = numeric(M)
+    
+for (j in 1 : M) {
+mean = getRandomMean(A)
+mean1=c(mean,-sum(mean))
+
+FValues[j] = F(mean1,A)
+LValues[j] = Lambda(mean)
+  }
+    
+pFValues[i] = mean(FValues > FVal)
+pLValues[i] = mean(LValues > LVal)
+}
+ 
+meanpL[kk+1]=mean(pLValues<.05)
+meanpF[kk+1]=mean(pFValues<.05)
+}
+
+
+
+plot(x1,meanpF,type="l",col="red")
+lines(x1,meanpL,type="l",col="green")
+
+

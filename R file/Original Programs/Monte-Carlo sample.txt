@@ -1,0 +1,22 @@
+library(gtools)
+
+b=5
+k=3
+
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+
+getCounter=function(A,level,M) {
+  counter=0
+  B=A
+  for(attempt in 1:M) {
+    for(i in 1:dim(A)[1]) B[i,]=sample(A[i,],k)
+    xmean=apply(B,2,mean)[1:k-1]
+    L=Lambda(xmean)$max
+    if(L>level) counter=counter+1
+  }
+  counter/M
+}
+
+getCounter(A,0.7,10)

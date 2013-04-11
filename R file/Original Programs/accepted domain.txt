@@ -1,0 +1,36 @@
+
+#A is a matrix 
+accvec=function(A) {
+   sumMax=0;
+   sumMin=0;
+   b=dim(A)[1];
+   k=dim(A)[2];
+   for(i in 1:b) {
+     sumMax=sumMax+max(A[i,]);
+     sumMin=sumMin+min(A[i,]);
+   }
+   return(runif(k-1,sumMin/k,sumMax/k))
+ }
+
+
+accvec=function(A) {
+   sumMax=0;
+   sumMin=0;
+   for(i in 1:b) {
+     sumMax=sumMax+max(A[i,]);
+     sumMin=sumMin+min(A[i,]);
+   }
+   return(runif(k-1,sumMin/b,sumMax/b))
+ }
+
+#for k=3
+acc=function(A) {
+   sumMax=0;
+   sumMin=0;
+     for(i in 1:b) {
+     sumMax=sumMax+max(A[i,]);
+     sumMin=sumMin+min(A[i,]);
+  }
+     sumMid=-sumMax-sumMin
+     list(sumMin/b,sumMid/b,sumMax/b,sumMax+sumMin+sumMid)
+ }

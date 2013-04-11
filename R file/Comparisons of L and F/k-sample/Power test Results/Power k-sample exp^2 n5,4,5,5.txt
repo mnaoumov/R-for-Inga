@@ -1,0 +1,10 @@
+> print(la)
+[1] 0.8345053
+> print("PowerL")
+[1] "PowerL"
+> print(PowerL)
+[1] 0.158
+> print("PowerF")
+[1] "PowerF"
+> print(PowerF)
+[1] 0.062

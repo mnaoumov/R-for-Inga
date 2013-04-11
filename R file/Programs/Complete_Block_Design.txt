@@ -1,0 +1,332 @@
+library(gtools)
+library(maxLik)
+
+b=5
+k=3
+
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+sumf=function(f) {
+  s=0
+  for(i in 1:b) s=s+f(i)
+  s/b }
+
+perm=function(i) permutations(k,k-1,A[i,])
+
+expb=function(i,beta) exp(perm(i)%*%beta)
+
+kappad2=function(beta) {
+    kappad2i=function(i) { -(t(perm(i))%*%expb(i,beta)%*%t(expb(i,beta))%*%perm(i))/sum(expb(i,beta))^2+(t(perm(i))%*%diag(c(expb(i,beta)))%*%perm(i))/sum(expb(i,beta))
+    }
+    sumf(kappad2i)
+  }
+
+Lambda=function(x){
+
+  kappa=function(beta) {
+    kappai=function(i) log(sum(expb(i,beta))/prod(1:k))
+    sumf(kappai)
+  }
+
+  kappad=function(beta) {
+    kappadi=function(i) t(perm(i))%*%expb(i,beta)/sum(expb(i,beta))
+    sumf(kappadi)
+  }
+
+ll=function(beta){beta%*%x-kappa(beta)}
+lll=function(beta){x-kappad(beta)[,1]}
+llll=function(beta){-kappad2(beta)}
+lam=maxNR(ll,grad=lll,hess=llll,start=rep(0,k-1))
+lam
+}
+
+
+getOrderedMeans = function() {
+  ASorted = array(dim = c(b,k))
+  for(i in 1:b)
+    ASorted[i,] = sort(A[i,])
+
+  orderedMeans = colMeans(ASorted)
+  
+  orderedMeans
+}
+
+orderedMeans = getOrderedMeans()
+
+isPointInsideDomain = function(x) {
+  y = x
+  if (length(y) == k - 1)
+    y[length(y) + 1] = -sum(y)
+
+  stopifnot(length(y) == k)
+
+  for (usedIndices in 1 : (k-1)) {
+    subVectors = combinations(k, usedIndices, y, set = FALSE)
+    subVectorSums = apply(subVectors, 1, sum)
+    sumMins = sum(orderedMeans[1 : usedIndices])
+    sumMaxs = sum(orderedMeans[(k - usedIndices + 1) : k])
+    if (!all(subVectorSums > sumMins))
+      return(FALSE);
+    if (!all(subVectorSums < sumMaxs))
+      return(FALSE);
+  }
+  return(TRUE)
+}
+
+Sqr=function(M){m=svd(M)$u%*%diag(sqrt(svd(M)$d))%*%t(svd(M)$v);m} 
+
+V0h=Sqr(kappad2(rep(0,k-1)))
+
+GenzMethod = function(s, d, f) {
+  intval = 0
+  intcls = 0
+  m = numeric(s)
+  m[1] = d
+  
+  while (m[1] <= d) {
+    wt = weight(s, m, d)
+    if (abs(wt) > 1e-10) {
+      fulsumResult = fulsum(s, m, d, f); fs = fulsumResult$fs; sumcls = fulsumResult$sumcls
+      intval = intval + wt * fs
+      intcls = intcls + sumcls
+    }
+    m = nxprtr(s, m)
+  }
+  intval = srfsph(s) * intval
+   
+  return(list(intval = intval, intcls = intcls))
+}
+
+srfsph = function(s) {
+  v = 2 * pi ^ (s / 2) / gamma(s / 2)
+  return(v)
+}
+
+weight = function(s, m, d) {
+  ws = 0
+  k = numeric(d)
+  while (TRUE) {
+    is = 0
+    ks = 0
+    mc = 1
+    kn = 1
+    pd = 1
+    for (i in seqInc(1, d)) {
+      is = is + 1
+      if (k[i] == 0)
+        pd = pd * (1 - is)
+      else {
+        pd = d * kn * pd / (s + ks)
+        ks = ks + 2
+        kn = kn + 2
+      }
+      if (is == m[mc]) {
+        mc = mc + 1
+        is = 0
+        kn = 1
+      }
+    }
+    ws = ws + pd
+    for (i in seqInc(1, d)) {
+      k[i] = k[i] + 1
+      if (k[i] < 2)
+        break
+      k[i] = 0
+    }
+    if (i == d && k[d] == 0)
+      break
+  }
+  for (i in seqInc(1, s)) {
+    for (j in seqInc(1, m[i])) {
+      ws = ws / (m[i] - j + 1)
+    }
+  }
+  return(ws)
+}
+
+fulsum = function(s, m, d, f) {
+  sumcls = 0
+  fs = 0
+  fin = 0
+  
+  while (fin == 0) {
+    x = -sqrt(m / d)  
+    symsumResult = symsum(s, x, f); sym = symsumResult$sym; symcls = symsumResult$sumcls
+    fs = fs + sym
+    sumcls = sumcls + symcls
+    nxpermResult = nxperm(s, m); m = nxpermResult$m; fin = nxpermResult$fin;
+  }
+   return(list(fs = fs, sumcls = sumcls))
+}
+
+symsum = function(s, zi, f) {
+  sumcls = 0
+  sym = 0
+  z = zi
+ 
+  while (TRUE) {
+    sumcls = sumcls + 1
+    sym = sym + (f(z) - sym) / sumcls
+    for (i in seqInc(1, s)) {
+      z[i] = -z[i]
+      if (z[i] > 0)
+        break
+    }
+    if (all(z == zi))
+      break
+  }
+  
+  return(list(sym = sym, sumcls = sumcls))
+}
+
+nxperm = function(s, mi) {
+  m = mi
+  fin = 0
+  for (i in seqInc(2, s)) {
+    if (m[i-1] > m[i]) {
+      mi = m[i]
+      ixchng = i - 1
+      if (i > 2) {
+        for (l in seqInc(1, ixchng / 2)) {
+          ml = m[l]
+          imnusl = i - l
+          m[l] = m[imnusl]
+          m[imnusl] = ml
+          if (ml <= mi)
+            ixchng = ixchng - 1
+          if (m[l] > mi)
+            lxchng = l
+        }
+        if (m[ixchng] <= mi)
+          ixchng = lxchng
+      }
+      m[i] = m[ixchng]
+      m[ixchng] = mi;
+      return(list(m = m, fin = fin))
+    }
+  }
+
+  for (i in seqInc(1, s / 2)) {
+    mi = m[i]
+    m[i] = m[s - i + 1]
+    m[s - i + 1] = mi
+  }
+  fin = 1;
+  return(list(m = m, fin = fin))
+}
+
+nxprtr = function(s, pi) {
+  p = pi
+  psum = p[1]
+  for (i in seqInc(2, s)) {
+    psum = psum + p[i]
+    if (p[1] <= p[i] + 1)
+      p[i] = 0
+    else {
+      p[1] = psum - (i - 1) * (p[i] + 1)
+      for (l in seqInc(2, i))
+        p[l] = p[i] + 1
+      return(p)
+    }
+  }
+  p[1] = psum + 1
+  return(p)
+}
+
+seqInc = function(from, to) {
+  res = numeric(0)
+  if (from <= to)
+    res = from:to
+  return(res)
+}
+
+Sqr=function(M){m=svd(M)$u%*%diag(sqrt(svd(M)$d))%*%t(svd(M)$v);m} 
+
+V0h=Sqr(kappad2(rep(0,k-1)))
+
+TailDistrMonteCarlo=function(u,M){
+  delta=function(s) {
+    transformed=function(r) (r*V0h%*%s)[,1]
+     r=u
+     for (i in 1:5){
+          tr = transformed(r)
+          if (isPointInsideDomain(tr))  
+                  L = Lambda (tr)
+          else if (isPointInsideDomain(tr/1.3)) 
+                  L = Lambda (tr/1.3)
+          else if (isPointInsideDomain(tr/1.5))  
+                  L = Lambda (tr/1.5)
+          else if (isPointInsideDomain(tr/2))  
+                  L = Lambda (tr/2)
+          else if (isPointInsideDomain(tr/2.5))  
+                  L = Lambda (tr/2.5)
+          else if (isPointInsideDomain(tr/3))  
+                 L = Lambda (tr/3)
+ 
+         r = r - ((L$max-u^2/2)/(L$est%*%V0h%*%s))[1,1]
+  }
+    betah=L$est
+  return((det(kappad2(betah))^(-1/2)*r^(k-2)*det(V0h))/(u^(k-3)*abs(t(s)%*%V0h%*%betah)))
+  } 
+
+  IntMonteCarlo=function(h) {
+  UniformOnSphere=function(n) {
+    x=rnorm(n)
+    r=sqrt(sum(x^2))
+    x/r
+  }
+    r=0
+    for(i in 1:M)
+        r = r + h(UniformOnSphere(k-1))
+    return (r / M)
+  }
+
+   cb=(b^((k-1)/2))/(2^((k-1)/2-1)*gamma((k-1)/2))
+   Gb=IntMonteCarlo(delta)
+
+LugRice=1-pchisq(b*u^2,k-1) + cb/b*u^(k-3)*exp(-b*u^2/2)*(Gb-1)
+   ustar=u-log(Gb)/(b*u)
+NielCox=1-pchisq(b*ustar^2,k-1)
+  list(LugRice,NielCox)
+}
+
+
+TailDistrGenz=function(u,M){
+  delta=function(s) {
+    transformed=function(r) (r*V0h%*%s)[,1]
+     r=u
+     for (i in 1:5){         
+          L = Lambda (transformed(r))
+          r = r - ((L$max-u^2/2)/(L$est%*%V0h%*%s))[1,1]
+     }
+    betah=Lambda(transformed(r))$est
+ return((det(kappad2(betah))^(-1/2)*r^(k-2)*det(V0h))/(u^(k-3)*abs(t(s)%*%V0h%*%betah)))
+  } 
+
+  IntGenzMethod=function(h) {
+    GenzMethod(k-1,M,h)$intval / srfsph(k-1);
+  }
+
+  cb=(b^((k-1)/2))/(2^((k-1)/2-1)*gamma((k-1)/2))
+  Gb=IntGenzMethod(delta)
+LugRice=1-pchisq(b*u^2,k-1) + cb/b*u^(k-3)*exp(-b*u^2/2)*(Gb-1)
+  ustar=u-log(Gb)/(b*u)
+NielCox=1-pchisq(b*ustar^2,k-1)
+  list(LugRice,NielCox)
+}
+
+
+MCRandomPerm=function(u,M) {
+  counter=0
+  B=A
+  for(attempt in 1:M) {
+    for(i in 1:b) B[i,]=sample(A[i,],k)
+    p=apply(B,2,mean)[1:(k-1)]
+    v = Lambda(p*0.9999)$max
+    if(v>u^2/2)  counter=counter+1
+  }
+  counter/M
+}
+
+

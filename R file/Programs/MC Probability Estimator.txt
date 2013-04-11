@@ -1,0 +1,142 @@
+# Load Libraries
+library(gtools)
+library(maxLik)
+
+# Prepare matrix
+
+b = 5
+k = 3
+
+A = array(runif(b * k), c(b, k))
+A = A - apply(A, 1, mean)
+A = A / sqrt(mean(A ^ 2))
+
+# List of permutations
+perm = function(i) {
+  permutations(k, k-1, A[i,])
+}
+
+# \sum_{i=1}^b f(i)
+sumf = function(f) {
+  s = 0
+  for (i in 1 : b)
+    s = s + f(i)
+  
+  s / b
+}
+
+expb = function(i, beta) {
+  exp(perm(i) %*% beta)
+}
+
+kfact = prod(1 : k)
+
+kappa = function(beta) {
+  kappai = function(i) {
+    log(sum(expb(i, beta)) / kfact)
+  }
+
+  sumf(kappai)
+}
+
+kappad = function(beta) {
+  kappadi = function(i) {
+    temp = expb(i, beta)
+
+    t(perm(i)) %*% temp / sum(temp)
+  }
+
+  sumf(kappadi)
+}
+
+kappad2 = function(beta) {
+  kappad2i = function(i) {
+    temp = expb(i, beta)
+
+    -(t(perm(i)) %*% temp %*% t(temp) %*% perm(i)) / sum(temp) ^ 2 + (t(perm(i)) %*% diag(c(temp)) %*% perm(i)) / sum(temp)
+  }
+
+  sumf(kappad2i)
+}
+
+Lambda = function(x) {
+  func = function(beta) {
+    beta %*% x - kappa(beta)
+  }
+
+  funcd = function(beta) {
+    x - kappad(beta)[, 1]
+  }
+
+  funcd2 = function(beta) {
+    -kappad2(beta)
+  }
+
+  lam = maxNR(func, grad = funcd, hess = funcd2, start = rep(0, k - 1))
+  lam
+}
+
+LambdaMax = function(x) {
+  Lambda(x * 0.999)$max
+}
+
+getAllPossibleMeans = function() {
+  tempList = list()
+  for (i in 1 : b)
+    tempList[[i]] = 1 : kfact
+
+  allIndices = expand.grid(tempList)
+
+  allPossiblePermutations = list()
+  for (i in 1 : b)
+    allPossiblePermutations[[i]] = permutations(k, k, A[i, ])
+
+  matrixOfAllMeans = array(dim = c(dim(allIndices)[1], k))
+
+  for (indicesRowIndex in 1 : dim(allIndices)[1]) {
+    indicesVector = allIndices[indicesRowIndex,]
+    tempMatrix = array(dim = c(b, k))
+    for (i in 1 : b) {                       
+      permutationsOfRow = allPossiblePermutations[[i]]
+      rowPermutationIndex = indicesVector[, i]
+      tempMatrix[i, ] = permutationsOfRow[rowPermutationIndex, ]
+    }
+  
+    matrixOfAllMeans[indicesRowIndex, ] = colMeans(tempMatrix)
+  }
+
+  matrixOfAllMeans
+}
+
+allPossibleMeans = getAllPossibleMeans()
+
+allPossibleLambdaValues = c()
+
+for (i in 1 : dim(allPossibleMeans)[1]) {
+  LambdaValue = LambdaMax(allPossibleMeans[i, ][1 : (k - 1)])
+  allPossibleLambdaValues[i] = LambdaValue
+}
+
+tailProbability = function(values, level) {
+  count = 0
+  for (value in values ) {
+    if (value > level)
+        count = count + 1
+  }
+  
+  count / length(values)
+}
+
+# P(Lambda(x) > u^2/2)
+# All permutations
+MonteCarloProbability = function(u) {
+  tailProbability(allPossibleLambdaValues, u ^ 2 / 2)
+}
+
+
+# P(Lambda(x) > u^2/2)
+# Random N permutations
+RandomMonteCarloProbability = function(u, N) {
+  tailProbability(sample(allPossibleLambdaValues, N), u ^ 2 / 2)
+}
+

@@ -1,0 +1,28 @@
+setwd("c:/Inga/Research/2010Statistics/R file/Programs")
+
+b=7
+k=4
+
+A = array(rexp(b * k)^2, c(b, k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+
+source("SP Block Functions fixed.txt")
+
+xxx=NULL;for(i in 1:10000)xxx=c(xxx, apply(t(apply(A,1,sample,size=k-1)),2,mean))
+xxx=matrix(xxx,k-1,10000)
+Lstat=NULL;for (i in 1:10000)Lstat=c(Lstat,Lambda(xxx[,i])$max)
+Fstat=b*apply(xxx^2,2,sum)
+
+apply(outer(Lstat,(6:15/10)^2/2,">"),2,mean)
+apply(outer(Fstat,b*(6:15/10)^2,">"),2,mean)
+round(1-pchisq(b*(6:15/10)^2,k-1),4)
+
+u=6:15/10
+tplr=NULL
+for (i in 1:10)tplr=c(tplr,TailDistrMonteCarlo(u[i],10)$LugRice)
+round(tplr,4)
+
+tpnc=NULL
+for (i in 1:10)tpnc=c(tpnc,TailDistrMonteCarlo(u[i],10)$NielCox)
+round(tpnc,4)

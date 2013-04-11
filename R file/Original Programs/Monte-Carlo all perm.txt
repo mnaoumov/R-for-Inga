@@ -1,0 +1,37 @@
+library(gtools)
+
+b=5
+k=3
+
+A=array(runif(b*k),c(b,k))
+A=A-apply(A,1,mean)
+A=A/sqrt(mean(A^2))
+
+kf=prod(1:k)
+
+tempList=list()
+for(i in 1:b) {
+  tempList[[i]]=1:kf
+}
+
+allIndices=expand.grid(tempList)
+
+allPossiblePermutations=list()
+for(i in 1:b) {
+  allPossiblePermutations[[i]]=permutations(k,k,A[i,])
+}
+
+level=0.7
+counter=0
+
+for (indicesRowIndex in 1:dim(allIndices)[1]) {
+  indicesVector=allIndices[indicesRowIndex,]
+  tempMatrix=A
+  for(i in 1:b) {
+    permutationsOfRow=allPossiblePermutations[[i]]	
+    rowPermutationIndex=indicesVector[,i]
+    tempMatrix[i,]=permutationsOfRow[rowPermutationIndex,]
+  }
+  c=colMeans(tempMatrix)[1:k-1]
+  if(Lambda(c)$max>level) counter=counter+1
+}
