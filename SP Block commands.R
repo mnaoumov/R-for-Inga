@@ -13,6 +13,7 @@ k = 4
 A = generateRandomMatrix(rexp, b, k)
 iterations = 1000
 u = (6 : 15) / 10
+M = 10
 
 
 xxx = NULL; for (i in 1 : iterations) xxx = c(xxx, apply(t(apply(A, 1, sample, size = k - 1)), 2, mean))
@@ -24,3 +25,11 @@ Fstat = b * apply(xxx ^ 2, 2, sum)
 apply(outer(Lstat, u ^ 2 / 2, ">"), 2, mean)
 apply(outer(Fstat, b * u ^ 2, ">"), 2, mean)
 round(1 - pchisq(b * u ^ 2, k - 1), 4)
+
+tplr = NULL
+for (up in u) tplr = c(tplr, TailDistrMonteCarlo(up, M)$LugRice)
+round(tplr, 4)
+
+tpnc = NULL
+for (up in u) tpnc = c(tpnc, TailDistrMonteCarlo(up, M)$NielCox)
+round(tpnc, 4)
