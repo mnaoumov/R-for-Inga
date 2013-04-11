@@ -11,3 +11,16 @@ set.seed(12345)
 b = 7
 k = 4
 A = generateRandomMatrix(rexp, b, k)
+iterations = 1000
+u = (6 : 15) / 10
+
+
+xxx = NULL; for (i in 1 : iterations) xxx = c(xxx, apply(t(apply(A, 1, sample, size = k - 1)), 2, mean))
+xxx = matrix(xxx, k - 1, iterations)
+
+Lstat = NULL; for (i in 1 : iterations) Lstat = c(Lstat, Lambda(A, xxx[,i])$max)
+Fstat = b * apply(xxx ^ 2, 2, sum)
+
+apply(outer(Lstat, u ^ 2 / 2, ">"), 2, mean)
+apply(outer(Fstat, b * u ^ 2, ">"), 2, mean)
+round(1 - pchisq(b * u ^ 2, k - 1), 4)
