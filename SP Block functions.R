@@ -151,9 +151,9 @@ V0h = memoise(function(A) {
   Sqr(kappad2(A, rep(0, k - 1)))  
 })
 
-transformIntoSphere = function(A, r, s) {
+transformIntoSphere = memoise(function(A, r, s) {
   (r * V0h(A) %*% s)[,1]
-}
+})
 
 delta = memoise(function(A, u, s, deltaIterations = 5) {
   k = getk(A)
