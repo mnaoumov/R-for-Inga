@@ -160,7 +160,7 @@ delta = memoise(function(A, u, s, deltaIterations = 5) {
   r = u
   V0h = V0h(A)
   
-  for (i in 1 : iterations) {
+  for (i in 1 : deltaIterations) {
     tr = transformIntoSphere(A, r, s)
     L = Lambda(A, tr)
     r = r - ((L$max - u ^ 2 / 2) / (L$est %*% V0h %*% s))[1,1]
