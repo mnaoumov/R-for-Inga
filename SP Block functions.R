@@ -50,7 +50,8 @@ kappad2 = memoise(function(A, beta) {
   for (i in 1 : b) {
     perm = perm(A, i)
     expb = expb(A, i, beta)
-    s = s - (t(perm) %*% expb %*% t(expb) %*% perm) / sum(expb) ^ 2 + (t(perm) %*% diag(c(expb)) %*% perm) / sum(expb)
+    s = s - (t(perm) %*% expb %*% t(expb) %*% perm) / sum(expb) ^ 2 +
+      (t(perm) %*% diag(c(expb)) %*% perm) / sum(expb)
   }
 
   s / b
@@ -121,7 +122,12 @@ Lambda = memoise(function(A, x, tolerance = 0.9999) {
   ll = function(beta) { beta %*% x - kappa(A, beta) }
   lll = function(beta) { x - kappad(A, beta)[,1] }
   llll = function(beta) { -kappad2(A, beta) }
-  lam = maxNR(ll, grad = lll, hess = llll, start = rep(0, k - 1))
+  lam = try(maxNR(ll, grad = lll, hess = llll, start = rep(0, k - 1), tol = 1 - tolerance), silent = TRUE)
+  
+  if ((length(lam) == 1) && (class(lam) == "try-error")) {
+    lam = Lambda(A, x * tolerance, tolerance)
+  }
+  
   lam
 })
 
