@@ -124,3 +124,58 @@ Lambda = memoise(function(A, x, tolerance = 0.9999) {
   lam = maxNR(ll, grad = lll, hess = llll, start = rep(0, k - 1))
   lam
 })
+
+Sqr = memoise(function(M) { svd(M)$u %*% diag(sqrt(svd(M)$d)) %*% t(svd(M)$v) })
+
+UniformOnSphere = function(n) {
+  x = rnorm(n)
+  r = sqrt(sum(x ^ 2))
+  x / r
+}
+
+IntOnSphereMonteCarlo = function(h, d, M) {
+  r = 0
+  for(i in 1 : M)
+    r = r + h(UniformOnSphere(d))
+  r / M
+}
+
+V0h = memoise(function(A) {
+  k = getk(A)
+  Sqr(kappad2(A, rep(0, k - 1)))  
+})
+
+transformIntoSphere = function(A, r, s) {
+  (r * V0h(A) %*% s)[,1]
+}
+
+delta = memoise(function(A, u, s, deltaIterations = 5) {
+  k = getk(A)
+  r = u
+  V0h = V0h(A)
+  
+  for (i in 1 : iterations) {
+    tr = transformIntoSphere(A, r, s)
+    L = Lambda(A, tr)
+    r = r - ((L$max - u ^ 2 / 2) / (L$est %*% V0h %*% s))[1,1]
+  }
+  
+  betah = L$est
+  
+  (det(kappad2(A, betah)) ^ (- 1 / 2) * r ^ (k - 2) * det(V0h)) / (u ^ (k - 3) * abs(t(s) %*% V0h %*% betah))
+})
+
+TailDistrMonteCarlo = function(A, u, M, deltaIterations = 5) {
+  k = getk(A)
+  b = getb(A)
+  
+  delta2 = function(s) delta(A, u, s, deltaIterations)
+  
+  cb = (b ^ ((k - 1) / 2)) / (2 ^ ((k - 1) / 2 - 1) * gamma((k - 1) / 2))
+  Gb = IntOnSphereMonteCarlo(delta2, k - 1, M)
+  
+  LugRice = 1 - pchisq(b * u ^ 2, k - 1) + cb / b * u ^ (k - 3) * exp(-b * u ^ 2 / 2) * (Gb - 1)
+  ustar = u - log(Gb) / (b * u)
+  NielCox = 1 - pchisq(b * ustar ^ 2, k - 1)
+  list(LugRice = LugRice, NielCox = NielCox)
+}
