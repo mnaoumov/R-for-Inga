@@ -1,5 +1,5 @@
 # should be changed if files are placed into a different folder
-setwd("c:/Inga/")
+setwd("c:/Inga/Research/2010Statistics/R file/NewPrograms/")
 
 source('SP Block functions.R')
 
